@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crosswalk Request Beacon — Interactive Simulation</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1220; --panel:#121e30; --muted:#9aaec4; --ink:#eef5ff; --cyan:#61d9ff; --green:#46e3a1; --yellow:#ffd166; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.5 system-ui,Segoe UI,sans-serif; background:radial-gradient(ellipse at 15% 0%,#16314d 0,transparent 42%),var(--bg); color:var(--ink); }
+    main { width:min(1080px,94vw); margin:32px auto 48px; }
+    h1 { margin:0 0 6px; font-size:clamp(1.7rem,4vw,2.6rem); }
+    p { color:var(--muted); margin:0; }
+    .banner { margin:20px 0; padding:13px 16px; border:1px solid #765a24; background:#33280f; color:#ffe7a4; border-radius:12px; font-weight:650; }
+    .grid { display:grid; grid-template-columns:1.15fr .85fr; gap:18px; }
+    .card { background:linear-gradient(145deg,#17263a,#101a2a); border:1px solid #263a53; border-radius:18px; padding:20px; box-shadow:0 14px 36px #0003; }
+    h2 { margin:0 0 14px; font-size:1.15rem; }
+    .scene { position:relative; height:320px; border-radius:14px; overflow:hidden; background:linear-gradient(#93c9e3 0 50%,#78957d 50% 59%,#263342 59%); }
+    .building { position:absolute; bottom:41%; left:5%; width:30%; height:40%; background:#8998a6; clip-path:polygon(0 17%,50% 0,100% 17%,100% 100%,0 100%); }
+    .building:after { content:""; position:absolute; inset:35% 10% 0; background:repeating-linear-gradient(90deg,#34485c 0 15px,transparent 15px 34px),repeating-linear-gradient(#34485c 0 18px,transparent 18px 38px); }
+    .road { position:absolute; bottom:0; height:42%; width:100%; background:#303945; }
+    .road:after { content:""; position:absolute; left:0; right:0; top:48%; border-top:3px dashed #d9e1e7aa; }
+    .crosswalk { position:absolute; z-index:1; left:43%; bottom:0; height:42%; width:21%; display:flex; gap:7px; align-items:stretch; transform:perspective(120px) rotateX(9deg); }
+    .crosswalk i { background:#e9eef1; flex:1; opacity:.92; }
+    .person { position:absolute; z-index:2; width:18px; height:56px; left:49%; bottom:43%; transition:left 9s linear; }
+    .person:before { content:""; position:absolute; width:15px; height:15px; border-radius:50%; background:#ffbb72; left:2px; top:0; }
+    .person:after { content:""; position:absolute; left:4px; top:16px; width:11px; height:37px; border-radius:8px 8px 3px 3px; background:#315fe7; box-shadow:-7px 34px 0 -3px #222,7px 34px 0 -3px #222; }
+    .person.walking { left:58%; }
+    .vehicle { position:absolute; z-index:2; bottom:14%; left:8%; width:112px; height:42px; border-radius:15px 20px 8px 8px; background:#d85757; box-shadow:inset 18px 7px 0 -3px #f2b6a2; transition:left 2s ease; }
+    .vehicle:before,.vehicle:after { content:""; position:absolute; bottom:-8px; width:18px; height:18px; border-radius:50%; background:#10141a; border:3px solid #aab5c2; }
+    .vehicle:before { left:15px; }.vehicle:after { right:15px; }
+    .signal { position:absolute; z-index:3; right:8%; bottom:27%; width:45px; height:80px; border-radius:12px; background:#17212b; border:3px solid #718090; display:grid; place-items:center; }
+    .lamp { width:22px; height:22px; border-radius:50%; background:#36434f; box-shadow:0 0 0 transparent; }
+    .lamp.on { background:var(--green); box-shadow:0 0 22px var(--green); }
+    .scene-caption { position:absolute; z-index:4; top:12px; left:12px; padding:5px 9px; border-radius:8px; background:#0b1220bb; color:#eaf4ff; font-size:.83rem; }
+    .status-row { display:flex; justify-content:space-between; gap:12px; align-items:center; margin:16px 0; }
+    .pill { display:inline-flex; align-items:center; gap:8px; border:1px solid #38506a; border-radius:999px; padding:7px 12px; font-weight:750; letter-spacing:.04em; }
+    .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); }
+    .pill.active { color:var(--green); border-color:#297858; }.pill.active .dot { background:var(--green); box-shadow:0 0 10px var(--green); }
+    .timer { font-variant-numeric:tabular-nums; font-size:1.8rem; font-weight:750; }
+    .button { width:100%; min-height:64px; border:0; border-radius:14px; color:#08121d; background:linear-gradient(135deg,#71e0ff,#43b9f2); font-size:1.05rem; font-weight:800; cursor:pointer; box-shadow:0 7px 0 #1d6d95; transition:transform .1s,filter .15s; }
+    .button:active { transform:translateY(4px); box-shadow:0 3px 0 #1d6d95; }.button:hover { filter:brightness(1.08); }
+    .secondary { margin-top:10px; background:#1b2c41; color:#c5d6e8; box-shadow:none; border:1px solid #38506a; min-height:42px; font-size:.9rem; }
+    .readout { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+    .metric { background:#0d1725; padding:12px; border-radius:11px; border:1px solid #25374c; }
+    .metric small { display:block; color:var(--muted); }.metric strong { font-size:1.05rem; }
+    .log { height:205px; overflow:auto; background:#070d15; border:1px solid #24354a; border-radius:11px; padding:12px; font:13px/1.6 ui-monospace,Consolas,monospace; color:#bce5cf; }
+    .log div { white-space:pre-wrap; }.log .warn { color:var(--yellow); }
+    .foot { margin-top:16px; font-size:.9rem; }
+    @media(max-width:760px) { .grid { grid-template-columns:1fr; } main { margin-top:22px; } .scene { height:270px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Crosswalk Request Beacon</h1>
+  <p>Interactive Track B concept demo · ESP32 behavior model</p>
+  <div class="banner">SIMULATION ONLY — no ESP32, sensor, GPIO, or FirmGen firmware is connected. This does not satisfy the event’s physical-hardware requirement.</div>
+  <div class="grid">
+    <section class="card">
+      <h2>Crosswalk scene</h2>
+      <div class="scene" aria-label="Illustrated crosswalk simulation">
+        <div class="building"></div><div class="road"></div>
+        <div class="crosswalk"><i></i><i></i><i></i><i></i><i></i></div>
+        <div id="person" class="person"></div><div id="vehicle" class="vehicle"></div>
+        <div class="signal"><div id="lamp" class="lamp"></div></div>
+        <div class="scene-caption">REQUEST BUTTON → CONTROLLER → WALK INDICATOR</div>
+      </div>
+      <div class="status-row">
+        <div id="statePill" class="pill"><span class="dot"></span><span id="stateText">IDLE</span></div>
+        <div id="timer" class="timer">—</div>
+      </div>
+      <button id="request" class="button">Request to cross</button>
+      <button id="reset" class="button secondary">Reset simulation</button>
+      <div class="readout">
+        <div class="metric"><small>Simulated input</small><strong id="inputState">Button released</strong></div>
+        <div class="metric"><small>Simulated output</small><strong id="outputState">LED off</strong></div>
+      </div>
+      <p class="foot">Click again during the 10-second walk interval to see the busy-request behavior.</p>
+    </section>
+    <section class="card">
+      <h2>UART / Monitor preview</h2>
+      <div id="log" class="log" role="log" aria-live="polite"></div>
+      <h2 style="margin-top:20px">Simulated acceptance checklist</h2>
+      <div id="checks" class="metric">Waiting for interactions…</div>
+      <p class="foot">These are browser-side interactions, not evidence from a physical board or FirmGen traceability report.</p>
+    </section>
+  </div>
+</main>
+<script>
+(() => {
+  const duration = 10_000;
+  const button = document.querySelector('#request');
+  const reset = document.querySelector('#reset');
+  const stateText = document.querySelector('#stateText');
+  const statePill = document.querySelector('#statePill');
+  const timer = document.querySelector('#timer');
+  const lamp = document.querySelector('#lamp');
+  const inputState = document.querySelector('#inputState');
+  const outputState = document.querySelector('#outputState');
+  const person = document.querySelector('#person');
+  const vehicle = document.querySelector('#vehicle');
+  const log = document.querySelector('#log');
+  const checks = document.querySelector('#checks');
+  let activeUntil = 0;
+  let tickHandle = 0;
+  let requestCount = 0;
+  let busyCount = 0;
+  let completedCount = 0;
+
+  function stamp() { return new Date().toLocaleTimeString([], {hour12:false}); }
+  function write(message, warn=false) {
+    const line = document.createElement('div');
+    if (warn) line.className = 'warn';
+    line.textContent = `[${stamp()}] ${message}`;
+    log.append(line);
+    log.scrollTop = log.scrollHeight;
+  }
+  function updateChecks() {
+    checks.textContent = `Requests accepted: ${requestCount} · Busy presses: ${busyCount} · Timer completions: ${completedCount}\nBrowser simulation only; physical-board acceptance remains untested.`;
+  }
+  function setIdle(completed=false) {
+    activeUntil = 0;
+    clearInterval(tickHandle);
+    stateText.textContent = 'IDLE';
+    statePill.classList.remove('active');
+    timer.textContent = '—';
+    lamp.classList.remove('on');
+    inputState.textContent = 'Button released';
+    outputState.textContent = 'LED off';
+    person.classList.remove('walking');
+    vehicle.style.left = '8%';
+    if (completed) {
+      completedCount++;
+      write('WALK_TIMER_COMPLETE');
+      write('STATE=IDLE LED=OFF');
+      updateChecks();
+    }
+  }
+  function tick() {
+    const remaining = Math.max(0, activeUntil - Date.now());
+    if (!remaining) { setIdle(true); return; }
+    const elapsed = duration - remaining;
+    const ledOn = Math.floor(elapsed / 500) % 2 === 0;
+    timer.textContent = `${(remaining / 1000).toFixed(1)}s`;
+    lamp.classList.toggle('on', ledOn);
+    outputState.textContent = ledOn ? 'LED on · blinking at 1 Hz' : 'LED off · blinking at 1 Hz';
+  }
+  button.addEventListener('click', () => {
+    inputState.textContent = 'Button pressed';
+    if (activeUntil > Date.now()) {
+      busyCount++;
+      write('REQUEST_IGNORED_BUSY', true);
+      updateChecks();
+      window.setTimeout(() => { inputState.textContent = 'Button released'; }, 220);
+      return;
+    }
+    requestCount++;
+    activeUntil = Date.now() + duration;
+    stateText.textContent = 'WALK_ACTIVE';
+    statePill.classList.add('active');
+    person.classList.add('walking');
+    vehicle.style.left = '34%';
+    write('REQUEST_ACCEPTED');
+    write('STATE=WALK_ACTIVE duration_ms=10000');
+    updateChecks();
+    tick();
+    tickHandle = window.setInterval(tick, 50);
+    window.setTimeout(() => { if (activeUntil) inputState.textContent = 'Button released'; }, 220);
+  });
+  reset.addEventListener('click', () => {
+    setIdle(false);
+    log.replaceChildren();
+    requestCount = busyCount = completedCount = 0;
+    write('BOOT: simulated button_gpio=4 led_gpio=2 uart_baud=115200');
+    write('STATE=IDLE LED=OFF');
+    updateChecks();
+  });
+  write('BOOT: simulated button_gpio=4 led_gpio=2 uart_baud=115200');
+  write('STATE=IDLE LED=OFF');
+  updateChecks();
+})();
+</script>
+</body>
+</html>

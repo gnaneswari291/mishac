@@ -1,0 +1,34 @@
+# Ignore local data and transient build outputs. Review before committing generated artifacts.
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Raw video and captured data; keep private footage out of Git
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.h264
+*.h265
+videos/
+data/private/
+
+# Python / editor artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.vscode/
+.idea/
+
+# Large compiled/runtime artifacts: publish only if needed and permitted
+*.engine
+*.plan
+*.onnx
+*.pt
+*.pth
+*.trt
